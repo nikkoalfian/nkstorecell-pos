@@ -22,7 +22,8 @@ interface PosAksesorisProps {
 }
 
 export const PosAksesoris: React.FC<PosAksesorisProps> = ({ onGoToInventory }) => {
-  const { accessories, addTransaction } = useApp();
+  const { accessories, addTransaction, isOwnerUnlocked, hasPermission } = useApp();
+  const showProfit = isOwnerUnlocked || hasPermission('canViewCostPrice');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
@@ -140,7 +141,7 @@ export const PosAksesoris: React.FC<PosAksesorisProps> = ({ onGoToInventory }) =
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Cari aksesoris HP (contoh: kabel, charger, tempered glass, casing)..."
+              placeholder="Cari aksesoris HP (kabel, charger, tempered glass, casing, audio)..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
@@ -448,10 +449,12 @@ export const PosAksesoris: React.FC<PosAksesorisProps> = ({ onGoToInventory }) =
                     <span>-{formatRupiah(discount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-emerald-400">
-                  <span>Estimasi Laba:</span>
-                  <span className="font-bold">{formatRupiah(totalProfit)}</span>
-                </div>
+                {showProfit && (
+                  <div className="flex justify-between text-emerald-400">
+                    <span>Estimasi Laba:</span>
+                    <span className="font-bold">{formatRupiah(totalProfit)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center text-sm font-extrabold text-white pt-2 border-t border-slate-800">
                   <span>Total Bayar:</span>
                   <span className="text-lg font-mono text-blue-400">{formatRupiah(totalAmount)}</span>

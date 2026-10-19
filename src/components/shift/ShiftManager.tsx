@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { ShiftRecord, ServerShiftItem } from '../../types';
-import { formatRupiah, formatDateIndo, generateInvoiceNo } from '../../utils/formatters';
+import { formatRupiah, formatDateIndo } from '../../utils/formatters';
 import {
   Clock,
   User,
@@ -22,10 +22,7 @@ import {
   Eye,
   Trash2,
   Calendar,
-  PlayCircle,
-  Zap,
   ShoppingBag,
-  Send,
   Sliders,
   Check,
   X,
@@ -42,9 +39,11 @@ export const ShiftManager: React.FC = () => {
     addShiftExpense,
     closeShift,
     deleteShift,
-    addTransaction,
     setActiveShiftReceipt,
     settings,
+    hasPermission,
+    requestOwnerPin,
+    isOwnerUnlocked,
   } = useApp();
 
   // Buka Shift Form State
@@ -68,7 +67,7 @@ export const ShiftManager: React.FC = () => {
   const [expenseAmount, setExpenseAmount] = useState<number | ''>('');
   const [expenseNote, setExpenseNote] = useState('');
 
-  // STANDALONE SIMULATOR & KALKULATOR AKTUAL (Bisa diuji langsung di layar utama)
+  // KALKULATOR REKAP SERVER
   const [simServerIdx, setSimServerIdx] = useState(0); // 0: Digipos, 1: SiDompul, 2: Mobo, 3: Multi
   const [simTotalSaldo, setSimTotalSaldo] = useState<number | ''>(282854);
   const [simSaldoAkhir, setSimSaldoAkhir] = useState<number | ''>(132748);
@@ -77,7 +76,7 @@ export const ShiftManager: React.FC = () => {
   // Tutup Shift Form State
   const [showCloseShiftModal, setShowCloseShiftModal] = useState(false);
 
-  // Total Saldo Modal 4 Server (bisa diedit langsung saat rekap / pengujian)
+  // Total Saldo Modal 4 Server
   const [modalTotalSaldos, setModalTotalSaldos] = useState<[number | '', number | '', number | '', number | '']>([
     282854,
     1000000,
@@ -140,43 +139,15 @@ export const ShiftManager: React.FC = () => {
     (Number(bukaServer3) || 0) +
     (Number(bukaServer4) || 0);
 
-  // Standalone Simulator Math Calculation
+  // Perhitungan Rekap Saldo & Laba Server
   const simNumTotal = typeof simTotalSaldo === 'number' ? simTotalSaldo : 0;
   const simNumAkhir = typeof simSaldoAkhir === 'number' ? simSaldoAkhir : 0;
   const simNumSales = typeof simPenjualan === 'number' ? simPenjualan : 0;
-  // RUMUS PERMINTAAN USER: (Penjualan + Saldo Akhir) - Total Saldo = Laba Bersih
+  // RUMUS OPERASIONAL KONTER: (Penjualan + Saldo Akhir) - Total Saldo = Laba Bersih
   const simProfit = (simNumSales + simNumAkhir) - simNumTotal;
   const simUsage = Math.max(0, simNumTotal - simNumAkhir);
 
-  // Set preset for standalone simulator
-  const handleSetSimPreset = (type: 'digipos' | 'sidompul' | 'mobo' | 'multi') => {
-    if (type === 'digipos') {
-      setSimServerIdx(0);
-      setSimTotalSaldo(282854);
-      setSimSaldoAkhir(132748);
-      setSimPenjualan(186000);
-      setSimToast('✅ Uji Coba Digipos: Total 282.854, Akhir 132.748, Jual 186.000 -> Laba Bersih Rp 35.894');
-    } else if (type === 'sidompul') {
-      setSimServerIdx(1);
-      setSimTotalSaldo(1000000);
-      setSimSaldoAkhir(760000);
-      setSimPenjualan(270000);
-      setSimToast('✅ Uji Coba SiDompul: Total 1.000.000, Akhir 760.000, Jual 270.000 -> Laba Bersih Rp 30.000');
-    } else if (type === 'mobo') {
-      setSimServerIdx(2);
-      setSimTotalSaldo(900000);
-      setSimSaldoAkhir(720000);
-      setSimPenjualan(200000);
-      setSimToast('✅ Uji Coba Mobo Indosat: Total 900.000, Akhir 720.000, Jual 200.000 -> Laba Bersih Rp 20.000');
-    } else if (type === 'multi') {
-      setSimServerIdx(3);
-      setSimTotalSaldo(1800000);
-      setSimSaldoAkhir(1450000);
-      setSimPenjualan(395000);
-      setSimToast('✅ Uji Coba Multi PPOB: Total 1.800.000, Akhir 1.450.000, Jual 395.000 -> Laba Bersih Rp 45.000');
-    }
-    setTimeout(() => setSimToast(null), 3500);
-  };
+
 
   // Pre-fill Close Shift when modal opens
   const handleOpenCloseModal = () => {
@@ -210,144 +181,9 @@ export const ShiftManager: React.FC = () => {
     setShowCloseShiftModal(true);
   };
 
-  // Auto-Fill Exact User Simulation Data:
-  // Server 1 Digipos: Total 282.854, Akhir 132.748, Penjualan 186.000 -> Laba Bersih 35.894
-  const handleAutoFillSimulationClose = () => {
-    if (!activeShift) return;
 
-    // 1. Set Total Saldo Modal secara eksplisit sesuai simulasi user
-    setModalTotalSaldos([282854, 1000000, 900000, 1800000]);
-    // 2. Set Saldo Akhir
-    setFinalBalances([132748, 760000, 720000, 1450000]);
-    // 3. Set Penjualan
-    setServerGrossSales([186000, 270000, 200000, 395000]);
 
-    // Perbarui saldo awal di activeShift agar tetap sinkron
-    updateActiveShiftServer(0, { initialBalance: 282854 });
 
-    // Hitung ekspektasi kas laci
-    const totalSimSales = 186000 + 270000 + 200000 + 395000;
-    const totalExp = activeShift.expenses.reduce((sum, e) => sum + e.amount, 0);
-    const expectedDrawer =
-      activeShift.initialCashDrawer +
-      totalSimSales +
-      activeShift.accessorySales +
-      activeShift.transferAdminProfit -
-      totalExp;
-
-    setActualCashDrawer(expectedDrawer);
-    setCloseNotes('Simulasi rekap shift: Server 1 Digipos terbukti laba bersih Rp 35.894');
-
-    setSimToast('✨ Data simulasi aktual terisi: Server 1 Digipos Laba Bersih = Rp 35.894!');
-    setTimeout(() => setSimToast(null), 4000);
-  };
-
-  // Quick Live Transaction Simulation during shift
-  const handleQuickSimulateTransaction = (type: 'pulsa' | 'token' | 'transfer' | 'tarik' | 'aksesoris') => {
-    if (!activeShift) return;
-
-    if (type === 'pulsa') {
-      addTransaction({
-        invoiceNo: generateInvoiceNo('PLS'),
-        type: 'pulsa',
-        title: 'Pulsa Telkomsel 50.000',
-        targetNumber: '081298881234',
-        operator: 'Telkomsel',
-        nominal: 50000,
-        adminFee: 0,
-        priceCost: 49800,
-        totalAmount: 52000,
-        profit: 2200,
-        paymentMethod: 'tunai',
-        amountPaid: 52000,
-        changeAmount: 0,
-        sourceAccountId: 'acc-server-1',
-        serialNumber: 'SN' + Math.floor(100000000000 + Math.random() * 900000000000),
-        status: 'sukses',
-      });
-      setSimToast('⚡ Transaksi Pulsa Rp 50.000 berhasil disimulasikan!');
-    } else if (type === 'token') {
-      addTransaction({
-        invoiceNo: generateInvoiceNo('PLN'),
-        type: 'token_pln',
-        title: 'Token Listrik PLN 100.000',
-        targetNumber: '14283920194',
-        targetName: 'PAK SUKIRNO',
-        operator: 'PLN',
-        nominal: 100000,
-        adminFee: 2500,
-        priceCost: 100500,
-        totalAmount: 103000,
-        profit: 2500,
-        paymentMethod: 'tunai',
-        amountPaid: 103000,
-        changeAmount: 0,
-        sourceAccountId: 'acc-server-4',
-        serialNumber: '2910-4820-1940-8291-5019',
-        status: 'sukses',
-      });
-      setSimToast('⚡ Transaksi Token Listrik PLN Rp 100.000 berhasil disimulasikan!');
-    } else if (type === 'transfer') {
-      addTransaction({
-        invoiceNo: generateInvoiceNo('TRF'),
-        type: 'transfer_uang',
-        title: 'Transfer Uang ke BRI',
-        targetNumber: '020601048291501',
-        targetName: 'HENDRA PRASETYO',
-        providerBank: 'BRI',
-        nominal: 350000,
-        adminFee: 5000,
-        priceCost: 350000,
-        totalAmount: 355000,
-        profit: 5000,
-        paymentMethod: 'tunai',
-        amountPaid: 355000,
-        changeAmount: 0,
-        serialNumber: 'RRN' + Math.floor(100000000000 + Math.random() * 900000000000),
-        status: 'sukses',
-      });
-      setSimToast('💳 Transaksi Transfer Bank Rp 350.000 (Admin Rp 5.000) berhasil disimulasikan!');
-    } else if (type === 'tarik') {
-      addTransaction({
-        invoiceNo: generateInvoiceNo('TRK'),
-        type: 'tarik_tunai',
-        title: 'Tarik Tunai Kasir (Transfer Masuk BCA)',
-        targetName: 'RUDI HERMAWAN',
-        providerBank: 'BCA',
-        nominal: 200000,
-        adminFee: 5000,
-        priceCost: 200000,
-        totalAmount: 205000,
-        profit: 5000,
-        paymentMethod: 'transfer_bank',
-        amountPaid: 205000,
-        changeAmount: 0,
-        serialNumber: 'RRN' + Math.floor(100000000000 + Math.random() * 900000000000),
-        status: 'sukses',
-      });
-      setSimToast('💵 Transaksi Tarik Tunai Rp 200.000 (Admin Rp 5.000) berhasil disimulasikan!');
-    } else if (type === 'aksesoris') {
-      addTransaction({
-        invoiceNo: generateInvoiceNo('ACC'),
-        type: 'aksesoris',
-        title: 'Penjualan Kabel Data Fast Charging Type-C',
-        nominal: 25000,
-        adminFee: 0,
-        priceCost: 12000,
-        totalAmount: 25000,
-        profit: 13000,
-        paymentMethod: 'tunai',
-        amountPaid: 25000,
-        changeAmount: 0,
-        serialNumber: 'POS-ACC-TEST',
-        status: 'sukses',
-        items: [{ name: 'Kabel Data Fast Charging Type-C 65W', quantity: 1, priceSell: 25000, priceCost: 12000 }],
-      });
-      setSimToast('📱 Penjualan Aksesoris Rp 25.000 (Laba Rp 13.000) berhasil disimulasikan!');
-    }
-
-    setTimeout(() => setSimToast(null), 3000);
-  };
 
   // Calculations for Tutup Shift strictly based on user's formula:
   // Laba Bersih = (Penjualan + Saldo Akhir) - Total Saldo
@@ -359,7 +195,7 @@ export const ShiftManager: React.FC = () => {
     let totalPulseProfit = 0;
 
     const serverStats = activeShift.servers.map((srv, idx) => {
-      // Total Saldo Modal (ambil dari modalTotalSaldos yang bisa diedit / disimulasikan)
+      // Total Saldo Modal (Saldo Awal + Top Up)
       const totalAvailable = typeof modalTotalSaldos[idx] === 'number'
         ? Number(modalTotalSaldos[idx])
         : (srv.initialBalance + (srv.topUpAmount || 0));
@@ -369,9 +205,8 @@ export const ShiftManager: React.FC = () => {
 
       const sales = typeof serverGrossSales[idx] === 'number' ? Number(serverGrossSales[idx]) : 0;
 
-      // RUMUS SESUAI PERMINTAAN USER:
-      // (penjualan + Saldo Akhir) - Total Saldo = laba bersih
-      // Contoh Digipos: (186.000 + 132.748) - 282.854 = 35.894
+      // RUMUS OPERASIONAL KONTER:
+      // (Penjualan + Saldo Akhir) - Total Saldo = Laba Bersih
       const profit = (sales + finalBal) - totalAvailable;
 
       totalUsage += usage;
@@ -540,10 +375,10 @@ export const ShiftManager: React.FC = () => {
                 type="button"
                 onClick={() => setShowBukaShiftModal(true)}
                 className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-800/50 text-xs font-semibold flex items-center gap-1.5 transition"
-                title="Buka shift baru dan input saldo awal kustom"
+                title="Buka shift baru dan input saldo awal"
               >
                 <Sliders className="w-4 h-4 text-amber-400" />
-                Simulasi Buka Shift Baru
+                Buka Shift Baru
               </button>
               <button
                 type="button"
@@ -649,8 +484,8 @@ export const ShiftManager: React.FC = () => {
             </div>
           </div>
 
-          {/* INTERACTIVE STANDALONE CALCULATOR & SIMULATOR FOR SERVER NET PROFIT */}
-          <div className="p-5 rounded-3xl bg-slate-950/95 border-2 border-emerald-500/40 shadow-2xl space-y-4">
+          {/* KALKULATOR REKAP SALDO & LABA SERVER PULSA */}
+          <div className="p-5 rounded-3xl bg-slate-950/95 border border-emerald-500/40 shadow-xl space-y-4">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
@@ -658,13 +493,13 @@ export const ShiftManager: React.FC = () => {
                 </div>
                 <div>
                   <h4 className="text-sm font-extrabold text-white flex items-center gap-2">
-                    Kalkulator & Simulator Laba Bersih Server Pulsa
+                    Kalkulator Rekap Saldo & Laba Server Pulsa
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                      Rumus Aktual Terverifikasi
+                      Rumus Shift Konter
                     </span>
                   </h4>
                   <p className="text-[11px] text-slate-400">
-                    Uji coba langsung rumus perhitungan laba bersih server secara real-time dengan angka riil Anda.
+                    Kalkulasi instan perputaran saldo modal dan perolehan laba bersih per server secara otomatis.
                   </p>
                 </div>
               </div>
@@ -676,49 +511,6 @@ export const ShiftManager: React.FC = () => {
               </div>
             </div>
 
-            {/* Quick Presets Row */}
-            <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
-              <div className="flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span className="text-slate-400 font-medium text-[11px]">Pilih Uji Coba Cepat:</span>
-              </div>
-              <div className="flex gap-1.5 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => handleSetSimPreset('digipos')}
-                  className={`px-3 py-1.5 rounded-xl font-bold text-xs transition border flex items-center gap-1.5 ${
-                    simServerIdx === 0 && simTotalSaldo === 282854 && simSaldoAkhir === 132748 && simPenjualan === 186000
-                      ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-900/40'
-                      : 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border-emerald-700/60'
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                  ✨ Contoh Digipos (Laba Rp 35.894)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetSimPreset('sidompul')}
-                  className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-blue-300 border border-blue-900 font-semibold text-xs transition"
-                >
-                  Server 2 SiDompul
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetSimPreset('mobo')}
-                  className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-yellow-300 border border-yellow-900 font-semibold text-xs transition"
-                >
-                  Server 3 Mobo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetSimPreset('multi')}
-                  className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-900 font-semibold text-xs transition"
-                >
-                  Server 4 Multi PPOB
-                </button>
-              </div>
-            </div>
-
             {/* Server Selector Tab */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
               {activeShift.servers.map((srv, idx) => (
@@ -727,22 +519,13 @@ export const ShiftManager: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setSimServerIdx(idx);
-                    if (idx === 0) {
-                      setSimTotalSaldo(282854);
-                      setSimSaldoAkhir(132748);
-                      setSimPenjualan(186000);
-                    } else if (idx === 1) {
-                      setSimTotalSaldo(1000000);
-                      setSimSaldoAkhir(760000);
-                      setSimPenjualan(270000);
-                    } else if (idx === 2) {
-                      setSimTotalSaldo(900000);
-                      setSimSaldoAkhir(720000);
-                      setSimPenjualan(200000);
-                    } else {
-                      setSimTotalSaldo(1800000);
-                      setSimSaldoAkhir(1450000);
-                      setSimPenjualan(395000);
+                    const srvTotal = srv.initialBalance + (srv.topUpAmount || 0);
+                    setSimTotalSaldo(srvTotal);
+                    if (typeof finalBalances[idx] === 'number') {
+                      setSimSaldoAkhir(finalBalances[idx]);
+                    }
+                    if (typeof serverGrossSales[idx] === 'number') {
+                      setSimPenjualan(serverGrossSales[idx]);
                     }
                   }}
                   className={`p-2.5 rounded-xl border text-left transition ${
@@ -774,7 +557,7 @@ export const ShiftManager: React.FC = () => {
                   type="number"
                   value={simTotalSaldo}
                   onChange={(e) => setSimTotalSaldo(e.target.value === '' ? '' : Number(e.target.value))}
-                  placeholder="Contoh: 282854"
+                  placeholder="0"
                   className="w-full bg-slate-950 border border-blue-800/60 rounded-xl px-3 py-2 text-base font-mono font-bold text-white focus:outline-none focus:border-blue-400"
                 />
                 <span className="text-[10px] text-slate-400 block font-mono">
@@ -794,7 +577,7 @@ export const ShiftManager: React.FC = () => {
                   type="number"
                   value={simSaldoAkhir}
                   onChange={(e) => setSimSaldoAkhir(e.target.value === '' ? '' : Number(e.target.value))}
-                  placeholder="Contoh: 132748"
+                  placeholder="0"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-base font-mono font-bold text-white focus:outline-none focus:border-emerald-400"
                 />
                 <span className="text-[10px] text-slate-400 block font-mono">
@@ -814,7 +597,7 @@ export const ShiftManager: React.FC = () => {
                   type="number"
                   value={simPenjualan}
                   onChange={(e) => setSimPenjualan(e.target.value === '' ? '' : Number(e.target.value))}
-                  placeholder="Contoh: 186000"
+                  placeholder="0"
                   className="w-full bg-slate-950 border border-emerald-800/60 rounded-xl px-3 py-2 text-base font-mono font-bold text-emerald-300 focus:outline-none focus:border-emerald-400"
                 />
                 <span className="text-[10px] text-emerald-400/80 block font-mono">
@@ -871,7 +654,7 @@ export const ShiftManager: React.FC = () => {
                   type="button"
                   onClick={() => {
                     updateActiveShiftServer(simServerIdx, { initialBalance: simNumTotal });
-                    setSimToast(`💾 Saldo Awal Server ${simServerIdx + 1} diperbarui menjadi ${formatRupiah(simNumTotal)}!`);
+                    setSimToast(`Saldo Awal Server ${simServerIdx + 1} diperbarui menjadi ${formatRupiah(simNumTotal)}!`);
                     setTimeout(() => setSimToast(null), 3000);
                   }}
                   className="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
@@ -883,7 +666,6 @@ export const ShiftManager: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    // Pre-fill Tutup Shift with these exact simulator numbers
                     setModalTotalSaldos((prev) => {
                       const copy = [...prev] as [number | '', number | '', number | '', number | ''];
                       copy[simServerIdx] = simNumTotal;
@@ -904,86 +686,9 @@ export const ShiftManager: React.FC = () => {
                   className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-950 transition"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  Buka Tutup Shift & Terapkan Angka Ini
+                  Terapkan Angka Ini ke Tutup Shift
                 </button>
               </div>
-            </div>
-          </div>
-
-          {/* LIVE SIMULATOR TESTING TOOL */}
-          <div className="p-4 rounded-2xl bg-slate-950/90 border border-amber-900/40 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <PlayCircle className="w-4 h-4 text-amber-400" />
-                <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">
-                  Simulator Cepat Transaksi Shift (Uji Coba Langsung)
-                </h4>
-              </div>
-              <span className="text-[11px] text-slate-400">
-                Klik tombol di bawah untuk simulasi transaksi berjalan:
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickSimulateTransaction('pulsa')}
-                className="p-2.5 rounded-xl bg-slate-900 hover:bg-blue-950 border border-slate-800 hover:border-blue-700/60 text-left transition space-y-1"
-              >
-                <div className="flex items-center gap-1.5 text-blue-400 font-bold text-[11px]">
-                  <Zap className="w-3.5 h-3.5" /> Pulsa 50k
-                </div>
-                <div className="text-[10px] text-slate-400">Server 1 (Digipos)</div>
-                <div className="text-[10px] font-mono text-emerald-400 font-semibold">+Laba Rp 2.200</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickSimulateTransaction('token')}
-                className="p-2.5 rounded-xl bg-slate-900 hover:bg-cyan-950 border border-slate-800 hover:border-cyan-700/60 text-left transition space-y-1"
-              >
-                <div className="flex items-center gap-1.5 text-cyan-400 font-bold text-[11px]">
-                  <Zap className="w-3.5 h-3.5" /> Token PLN 100k
-                </div>
-                <div className="text-[10px] text-slate-400">Server 4 (Multi)</div>
-                <div className="text-[10px] font-mono text-emerald-400 font-semibold">+Laba Rp 2.500</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickSimulateTransaction('transfer')}
-                className="p-2.5 rounded-xl bg-slate-900 hover:bg-indigo-950 border border-slate-800 hover:border-indigo-700/60 text-left transition space-y-1"
-              >
-                <div className="flex items-center gap-1.5 text-indigo-400 font-bold text-[11px]">
-                  <Send className="w-3.5 h-3.5" /> Transfer BRI
-                </div>
-                <div className="text-[10px] text-slate-400">Kirim Rp 350.000</div>
-                <div className="text-[10px] font-mono text-emerald-400 font-semibold">+Admin Rp 5.000</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickSimulateTransaction('tarik')}
-                className="p-2.5 rounded-xl bg-slate-900 hover:bg-emerald-950 border border-slate-800 hover:border-emerald-700/60 text-left transition space-y-1"
-              >
-                <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px]">
-                  <Banknote className="w-3.5 h-3.5" /> Tarik Tunai
-                </div>
-                <div className="text-[10px] text-slate-400">Tarik Rp 200.000</div>
-                <div className="text-[10px] font-mono text-emerald-400 font-semibold">+Admin Rp 5.000</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickSimulateTransaction('aksesoris')}
-                className="p-2.5 rounded-xl bg-slate-900 hover:bg-purple-950 border border-slate-800 hover:border-purple-700/60 text-left transition space-y-1"
-              >
-                <div className="flex items-center gap-1.5 text-purple-400 font-bold text-[11px]">
-                  <ShoppingBag className="w-3.5 h-3.5" /> Kabel C 65W
-                </div>
-                <div className="text-[10px] text-slate-400">Jual Rp 25.000</div>
-                <div className="text-[10px] font-mono text-emerald-400 font-semibold">+Laba Rp 13.000</div>
-              </button>
             </div>
           </div>
         </div>
@@ -1011,14 +716,14 @@ export const ShiftManager: React.FC = () => {
                 onClick={() => handleApplyPreset('digipos')}
                 className="px-2.5 py-1 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-700 font-semibold hover:bg-emerald-900"
               >
-                Contoh Digipos (Rp 282.854)
+                Paket Standar 1 (Rp 282.854)
               </button>
               <button
                 type="button"
                 onClick={() => handleApplyPreset('standar')}
                 className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
               >
-                Standar
+                Paket Standar 2 (Rp 1 Juta)
               </button>
               <button
                 type="button"
@@ -1032,7 +737,7 @@ export const ShiftManager: React.FC = () => {
                 onClick={() => handleApplyPreset('kosong')}
                 className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700"
               >
-                Kosongkan
+                Input Manual
               </button>
             </div>
           </div>
@@ -1049,7 +754,7 @@ export const ShiftManager: React.FC = () => {
                     type="text"
                     value={bukaCashierName}
                     onChange={(e) => setBukaCashierName(e.target.value)}
-                    placeholder="Contoh: Nikko / Kasir Shift 1"
+                    placeholder="Nama kasir yang bertugas"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
                     required
                   />
@@ -1066,7 +771,7 @@ export const ShiftManager: React.FC = () => {
                     type="number"
                     value={bukaCashDrawer}
                     onChange={(e) => setBukaCashDrawer(e.target.value === '' ? '' : Number(e.target.value))}
-                    placeholder="Contoh: 1000000"
+                    placeholder="0"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-sm font-bold font-mono text-emerald-400 focus:outline-none focus:border-blue-500"
                     required
                   />
@@ -1256,12 +961,24 @@ export const ShiftManager: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
+                              if (!isOwnerUnlocked && !hasPermission('canDeleteShifts')) {
+                                requestOwnerPin(
+                                  'Hapus Catatan Shift',
+                                  () => {
+                                    if (confirm(`Hapus data shift #${s.shiftNumber}?`)) {
+                                      deleteShift(s.id);
+                                    }
+                                  },
+                                  'Menghapus riwayat shift dibatasi untuk kasir. Masukkan PIN Pemilik untuk konfirmasi.'
+                                );
+                                return;
+                              }
                               if (confirm(`Hapus data shift #${s.shiftNumber}?`)) {
                                 deleteShift(s.id);
                               }
                             }}
                             className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-300 transition"
-                            title="Hapus Rekap"
+                            title="Hapus Rekap Shift"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1276,7 +993,7 @@ export const ShiftManager: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL SIMULASI BUKA SHIFT BARU */}
+      {/* MODAL BUKA SHIFT BARU */}
       {showBukaShiftModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
           <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden my-6">
@@ -1284,7 +1001,7 @@ export const ShiftManager: React.FC = () => {
               <div className="flex items-center gap-2.5">
                 <Sliders className="w-5 h-5 text-amber-400" />
                 <h3 className="font-extrabold text-white text-base">
-                  Simulasi Buka Shift Baru (Input Saldo Awal Kustom)
+                  Buka Shift Baru (Input Saldo Awal)
                 </h3>
               </div>
               <button
@@ -1299,21 +1016,21 @@ export const ShiftManager: React.FC = () => {
             <form onSubmit={handleBukaShiftSubmit} className="p-6 space-y-5 text-xs max-h-[75vh] overflow-y-auto">
               {/* Presets */}
               <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 flex items-center justify-between flex-wrap gap-2">
-                <span className="text-slate-400 font-medium">Pilih Preset Cepat:</span>
+                <span className="text-slate-400 font-medium">Pilihan Saldo Awal:</span>
                 <div className="flex gap-2 flex-wrap">
                   <button
                     type="button"
                     onClick={() => handleApplyPreset('digipos')}
                     className="px-2.5 py-1.5 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-700 font-semibold hover:bg-emerald-900"
                   >
-                    Contoh Digipos (Rp 282.854)
+                    Paket Standar 1 (Rp 282.854)
                   </button>
                   <button
                     type="button"
                     onClick={() => handleApplyPreset('standar')}
                     className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold"
                   >
-                    Standar
+                    Paket Standar 2 (Rp 1 Juta)
                   </button>
                   <button
                     type="button"
@@ -1327,7 +1044,7 @@ export const ShiftManager: React.FC = () => {
                     onClick={() => handleApplyPreset('kosong')}
                     className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700"
                   >
-                    Kosongkan (Input Bebas)
+                    Input Manual
                   </button>
                 </div>
               </div>
@@ -1464,21 +1181,14 @@ export const ShiftManager: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmitTutupShift} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto text-xs">
-              {/* Auto-Fill Simulation Button Banner */}
-              <div className="p-3.5 bg-gradient-to-r from-blue-950/60 to-indigo-950/40 border border-blue-800/60 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-blue-200">
+              {/* Formula Guidance Banner */}
+              <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3 text-slate-300">
                 <div className="flex items-center gap-2.5">
-                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                  <Calculator className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>
-                    Uji coba dengan contoh Anda? Klik tombol di samping untuk <strong>mengisi otomatis contoh Digipos</strong> (Total Saldo: 282.854, Akhir: 132.748, Jual: 186.000 $\rightarrow$ Laba 35.894)!
+                    Masukkan Saldo Akhir dan Penjualan riil setiap server. Laba bersih per server dihitung otomatis dengan rumus: <strong className="text-emerald-400 font-mono">(Penjualan + Saldo Akhir) - Total Saldo</strong>.
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleAutoFillSimulationClose}
-                  className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shrink-0 shadow transition"
-                >
-                  ✨ Isi Contoh Digipos Otomatis
-                </button>
               </div>
 
               {/* 4 Servers Grid */}
@@ -1496,35 +1206,7 @@ export const ShiftManager: React.FC = () => {
                     >
                       {/* Server Title & Total Saldo Modal */}
                       <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-white text-xs">{srv.serverName}</span>
-                          {idx === 0 && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setModalTotalSaldos((prev) => {
-                                  const copy = [...prev] as [number | '', number | '', number | '', number | ''];
-                                  copy[0] = 282854;
-                                  return copy;
-                                });
-                                setFinalBalances((prev) => {
-                                  const copy = [...prev] as [number | '', number | '', number | '', number | ''];
-                                  copy[0] = 132748;
-                                  return copy;
-                                });
-                                setServerGrossSales((prev) => {
-                                  const copy = [...prev] as [number | '', number | '', number | '', number | ''];
-                                  copy[0] = 186000;
-                                  return copy;
-                                });
-                              }}
-                              className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30"
-                              title="Klik untuk isi simulasi contoh aktual Digipos"
-                            >
-                              Isi Contoh Digipos
-                            </button>
-                          )}
-                        </div>
+                        <span className="font-bold text-white text-xs">{srv.serverName}</span>
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-slate-300">
                           Server {idx + 1}
                         </span>
@@ -1539,7 +1221,7 @@ export const ShiftManager: React.FC = () => {
                           </label>
                           <input
                             type="number"
-                            placeholder="Contoh: 282854"
+                            placeholder="0"
                             value={modalTotalSaldos[idx]}
                             onChange={(e) => {
                               const val = e.target.value === '' ? '' : Number(e.target.value);
@@ -1561,7 +1243,7 @@ export const ShiftManager: React.FC = () => {
                           </label>
                           <input
                             type="number"
-                            placeholder="Contoh: 132748"
+                            placeholder="0"
                             value={finalBalances[idx]}
                             onChange={(e) => {
                               const val = e.target.value === '' ? '' : Number(e.target.value);
@@ -1583,7 +1265,7 @@ export const ShiftManager: React.FC = () => {
                           </label>
                           <input
                             type="number"
-                            placeholder="Contoh: 186000"
+                            placeholder="0"
                             value={serverGrossSales[idx]}
                             onChange={(e) => {
                               const val = e.target.value === '' ? '' : Number(e.target.value);
@@ -1722,7 +1404,7 @@ export const ShiftManager: React.FC = () => {
                 <label className="text-slate-400 block mb-1">Catatan Penutupan Shift (Opsional):</label>
                 <input
                   type="text"
-                  placeholder="Contoh: Shift lancar, server 2 sempat gangguan 10 menit"
+                  placeholder="Catatan penutupan shift (opsional)..."
                   value={closeNotes}
                   onChange={(e) => setCloseNotes(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
@@ -1779,7 +1461,7 @@ export const ShiftManager: React.FC = () => {
                 </label>
                 <input
                   type="number"
-                  placeholder="Contoh: 500000"
+                  placeholder="0"
                   value={topUpAmount}
                   onChange={(e) => setTopUpAmount(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 font-bold font-mono text-white focus:outline-none focus:border-blue-500"
@@ -1818,7 +1500,7 @@ export const ShiftManager: React.FC = () => {
                 <label className="text-slate-300 block mb-1 font-medium">Nominal Pengeluaran (Rp):</label>
                 <input
                   type="number"
-                  placeholder="Contoh: 20000"
+                  placeholder="0"
                   value={expenseAmount}
                   onChange={(e) => setExpenseAmount(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 font-bold font-mono text-rose-400 focus:outline-none focus:border-rose-500"
@@ -1830,7 +1512,7 @@ export const ShiftManager: React.FC = () => {
                 <label className="text-slate-300 block mb-1 font-medium">Keterangan / Keperluan:</label>
                 <input
                   type="text"
-                  placeholder="Contoh: Beli air mineral / Makan siang"
+                  placeholder="Keterangan pengeluaran (misal: Air mineral, ATK, operasional)..."
                   value={expenseNote}
                   onChange={(e) => setExpenseNote(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-rose-500"

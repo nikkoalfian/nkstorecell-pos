@@ -238,7 +238,7 @@ export const PosTarikTunai: React.FC = () => {
               <label className="text-xs text-slate-400 block mb-1">Nama Pelanggan:</label>
               <input
                 type="text"
-                placeholder="Contoh: PAK BUDI"
+                placeholder="Nama pelanggan"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs uppercase text-white focus:outline-none focus:border-emerald-500"
@@ -248,7 +248,7 @@ export const PosTarikTunai: React.FC = () => {
               <label className="text-xs text-slate-400 block mb-1">No. WhatsApp Pelanggan (Kirim Struk):</label>
               <input
                 type="tel"
-                placeholder="Contoh: 081234567890"
+                placeholder="Nomor WhatsApp (08...)"
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-emerald-500"

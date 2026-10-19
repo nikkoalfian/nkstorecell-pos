@@ -346,7 +346,7 @@ export const InventoryManager: React.FC = () => {
                 <label className="text-slate-300 font-medium block mb-1">Nama Produk Aksesoris:</label>
                 <input
                   type="text"
-                  placeholder="Contoh: Kabel Data Fast Charging Type-C"
+                  placeholder="Nama produk aksesoris (Kabel Data, Charger, Case, dll)..."
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"

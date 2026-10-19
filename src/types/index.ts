@@ -137,6 +137,21 @@ export interface ShiftRecord {
   notes?: string;
 }
 
+export interface StaffPermissions {
+  canAccessShift: boolean; // Buka & Tutup Shift 4 Server
+  canAccessTransfer: boolean; // Menu Transaksi Transfer Uang
+  canAccessTarikTunai: boolean; // Menu Transaksi Tarik Tunai
+  canAccessPosAksesoris: boolean; // Kasir Penjualan Aksesoris POS
+  canAccessKasbon: boolean; // Catatan Kasbon Pelanggan
+  canAccessInventory: boolean; // Manajemen Stok Gudang & Tambah/Edit Barang
+  canAccessFinance: boolean; // Buku Kas & Mutasi Saldo Rekening / Bank
+  canAccessReports: boolean; // Laporan Laba Rugi Toko & Omset Keseluruhan
+  canDeleteTransactions: boolean; // Hapus Riwayat Transaksi
+  canDeleteShifts: boolean; // Hapus Riwayat Shift
+  canEditSettings: boolean; // Pengaturan Toko & Printer
+  canViewCostPrice: boolean; // Melihat Estimasi Laba & Harga Modal di Kasir POS
+}
+
 export interface StoreSettings {
   storeName: string;
   tagline: string;
@@ -150,4 +165,5 @@ export interface StoreSettings {
   serverNames: [string, string, string, string]; // Nama 4 server pulsa
   ownerPin?: string; // Default '1234'
   enablePinProtection?: boolean; // Aktifkan proteksi PIN
+  staffPermissions?: StaffPermissions; // Pengaturan hak akses staf/kasir oleh pemilik
 }

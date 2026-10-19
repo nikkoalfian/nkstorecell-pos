@@ -274,7 +274,7 @@ export const FinanceManager: React.FC = () => {
                   min="1"
                   value={transferAmount}
                   onChange={(e) => setTransferAmount(e.target.value === '' ? '' : Number(e.target.value))}
-                  placeholder="Contoh: 1000000"
+                  placeholder="0"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-base font-bold font-mono text-white focus:outline-none focus:border-blue-500"
                   required
                 />
@@ -349,7 +349,7 @@ export const FinanceManager: React.FC = () => {
                   min="1"
                   value={opAmount}
                   onChange={(e) => setOpAmount(e.target.value === '' ? '' : Number(e.target.value))}
-                  placeholder="Contoh: 25000"
+                  placeholder="0"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-base font-bold font-mono text-white focus:outline-none focus:border-blue-500"
                   required
                 />
@@ -375,7 +375,7 @@ export const FinanceManager: React.FC = () => {
                 <label className="text-slate-300 font-medium block mb-1">Keterangan / Catatan:</label>
                 <input
                   type="text"
-                  placeholder="Contoh: Beli 5 roll kertas struk thermal 58mm"
+                  placeholder="Keterangan transaksi..."
                   value={opNotes}
                   onChange={(e) => setOpNotes(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"

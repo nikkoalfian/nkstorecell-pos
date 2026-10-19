@@ -153,7 +153,7 @@ export const PosTransfer: React.FC = () => {
               </label>
               <input
                 type="tel"
-                placeholder="Contoh: 020601045678503"
+                placeholder="Nomor rekening / No. HP tujuan"
                 value={accountNumber}
                 onChange={(e) => setAccountNumber(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-base font-mono text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
@@ -167,7 +167,7 @@ export const PosTransfer: React.FC = () => {
               </label>
               <input
                 type="text"
-                placeholder="Contoh: AHMAD FAUZI"
+                placeholder="Nama pemilik rekening / penerima"
                 value={beneficiaryName}
                 onChange={(e) => setBeneficiaryName(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-base uppercase text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
@@ -265,7 +265,7 @@ export const PosTransfer: React.FC = () => {
             <label className="text-xs text-slate-400 block mb-1">Catatan Transaksi (Opsional):</label>
             <input
               type="text"
-              placeholder="Contoh: Bayar kontrakan / Uang jajan adik"
+              placeholder="Berita / catatan transfer (opsional)..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { StoreSettings } from '../../types';
+import { StoreSettings, StaffPermissions } from '../../types';
+import { DEFAULT_STAFF_PERMISSIONS } from '../../data/initialData';
 import {
   Settings,
   X,
@@ -13,6 +14,8 @@ import {
   MapPin,
   Printer,
   ShieldAlert,
+  ShieldCheck,
+  Lock,
 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -55,7 +58,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   };
 
   const handleReset = () => {
-    if (confirm('PERINGATAN: Apakah Anda yakin ingin mereset semua data aplikasi kembali ke contoh awal? Semua transaksi baru akan terhapus.')) {
+    if (confirm('PERINGATAN: Apakah Anda yakin ingin mereset seluruh data aplikasi ke pengaturan awal toko? Seluruh riwayat transaksi akan dikosongkan.')) {
       resetAllData();
       onClose();
     }
@@ -147,7 +150,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               <Store className="w-4 h-4 text-emerald-400" /> Nama 4 Server Pulsa & Kuota Terpisah
             </h4>
             <p className="text-[11px] text-slate-500">
-              Ubah label nama 4 server sesuai aplikasi/chip yang Anda gunakan (contoh: Digipos, SiDompul, Mobo, dsb).
+              Ubah label nama 4 server sesuai aplikasi/chip yang Anda gunakan (misal: Digipos, SiDompul, Mobo, dsb).
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -278,7 +281,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     maxLength={6}
                     value={form.ownerPin || ''}
                     onChange={(e) => setForm({ ...form, ownerPin: e.target.value.replace(/\D/g, '') })}
-                    placeholder="Contoh: 1234"
+                    placeholder="4 digit PIN"
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono font-bold tracking-widest text-base focus:outline-none focus:border-amber-500"
                     required
                   />
@@ -286,6 +289,59 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 <span className="text-[10px] text-slate-500 mt-1 block">
                   PIN saat ini: <strong className="text-amber-400 font-mono">{form.ownerPin || '1234'}</strong> (Hanya pemilik yang tahu PIN ini)
                 </span>
+              </div>
+            </div>
+
+            {/* Atur Hak Akses Staf Kasir */}
+            <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                  <span className="text-xs font-bold text-white">Hak Akses Staf / Kasir</span>
+                </div>
+                <span className="text-[10px] text-slate-400">Centang menu yang diizinkan untuk kasir</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                {[
+                  { key: 'canAccessShift' as keyof StaffPermissions, label: 'Shift & 4 Server' },
+                  { key: 'canAccessTransfer' as keyof StaffPermissions, label: 'Transfer Uang' },
+                  { key: 'canAccessTarikTunai' as keyof StaffPermissions, label: 'Tarik Tunai' },
+                  { key: 'canAccessPosAksesoris' as keyof StaffPermissions, label: 'Kasir Aksesoris' },
+                  { key: 'canAccessKasbon' as keyof StaffPermissions, label: 'Catatan Kasbon' },
+                  { key: 'canAccessInventory' as keyof StaffPermissions, label: 'Gudang Stok & Kulakan' },
+                  { key: 'canAccessFinance' as keyof StaffPermissions, label: 'Buku Kas & Bank' },
+                  { key: 'canAccessReports' as keyof StaffPermissions, label: 'Laporan Laba Rugi' },
+                  { key: 'canViewCostPrice' as keyof StaffPermissions, label: 'Lihat Laba di POS' },
+                  { key: 'canDeleteTransactions' as keyof StaffPermissions, label: 'Hapus Transaksi' },
+                ].map((item) => {
+                  const currentPerms = form.staffPermissions || DEFAULT_STAFF_PERMISSIONS;
+                  const isChecked = !!currentPerms[item.key];
+                  return (
+                    <label
+                      key={item.key}
+                      className={`flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition ${
+                        isChecked
+                          ? 'bg-indigo-950/40 border-indigo-700/50 text-indigo-200'
+                          : 'bg-slate-900 border-slate-800 text-slate-400'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          const updated = {
+                            ...currentPerms,
+                            [item.key]: !isChecked,
+                          };
+                          setForm({ ...form, staffPermissions: updated });
+                        }}
+                        className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0"
+                      />
+                      <span>{item.label}</span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
           </div>

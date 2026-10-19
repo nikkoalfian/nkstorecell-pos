@@ -19,7 +19,17 @@ import {
   Unlock,
 } from 'lucide-react';
 
-export type ActiveTab = 'shift' | 'transfer' | 'tarik_tunai' | 'aksesoris' | 'inventory' | 'finance' | 'kasbon' | 'reports';
+export type ActiveTab =
+  | 'shift'
+  | 'transfer'
+  | 'tarik_tunai'
+  | 'aksesoris'
+  | 'inventory'
+  | 'finance'
+  | 'kasbon'
+  | 'reports'
+  | 'owner_dashboard'
+  | 'permissions';
 
 interface NavbarProps {
   activeTab: ActiveTab;
@@ -36,6 +46,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenS
     isOwnerUnlocked,
     lockOwner,
     requestOwnerPin,
+    viewMode,
+    switchViewMode,
+    hasPermission,
   } = useApp();
   const [currentTime, setCurrentTime] = useState<string>('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -66,28 +79,83 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenS
   const mainBankAcc = accounts.find((a) => a.type === 'bank');
   const unpaidKasbonCount = kasbonList.filter((k) => !k.isPaid).length;
 
-  const navItems = [
-    {
-      id: 'shift' as ActiveTab,
-      label: 'Shift & 4 Server',
-      icon: Clock,
-      color: 'text-amber-400',
-      badge: activeShift ? 'Aktif' : 'Buka',
-      badgeColor: activeShift ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-slate-700 text-slate-300',
-    },
-    { id: 'transfer' as ActiveTab, label: 'Transfer Uang', icon: Send, color: 'text-indigo-400' },
-    { id: 'tarik_tunai' as ActiveTab, label: 'Tarik Tunai', icon: Banknote, color: 'text-emerald-400' },
-    { id: 'aksesoris' as ActiveTab, label: 'Aksesoris HP', icon: ShoppingBag, color: 'text-purple-400' },
-    { id: 'finance' as ActiveTab, label: 'Buku Kas & Saldo', icon: Wallet, color: 'text-teal-400' },
-    {
-      id: 'kasbon' as ActiveTab,
-      label: 'Catatan Kasbon',
-      icon: BookOpen,
-      color: 'text-amber-400',
-      badge: unpaidKasbonCount > 0 ? unpaidKasbonCount : undefined,
-    },
-    { id: 'reports' as ActiveTab, label: 'Laporan Laba Rugi', icon: BarChart3, color: 'text-rose-400' },
-  ];
+  // Build navItems dynamically depending on viewMode (Owner vs Staff)
+  const isOwner = viewMode === 'owner' && isOwnerUnlocked;
+
+  const navItems = isOwner
+    ? [
+        {
+          id: 'owner_dashboard' as ActiveTab,
+          label: '👑 Dashboard Owner',
+          icon: Radio,
+          color: 'text-amber-400',
+        },
+        {
+          id: 'shift' as ActiveTab,
+          label: 'Shift & 4 Server',
+          icon: Clock,
+          color: 'text-amber-400',
+          badge: activeShift ? 'Aktif' : 'Buka',
+          badgeColor: activeShift ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-slate-700 text-slate-300',
+        },
+        { id: 'transfer' as ActiveTab, label: 'Transfer Uang', icon: Send, color: 'text-indigo-400' },
+        { id: 'tarik_tunai' as ActiveTab, label: 'Tarik Tunai', icon: Banknote, color: 'text-emerald-400' },
+        { id: 'aksesoris' as ActiveTab, label: 'Aksesoris HP', icon: ShoppingBag, color: 'text-purple-400' },
+        { id: 'inventory' as ActiveTab, label: 'Gudang & Stok', icon: Building2, color: 'text-purple-400' },
+        { id: 'finance' as ActiveTab, label: 'Buku Kas & Bank', icon: Wallet, color: 'text-teal-400' },
+        {
+          id: 'kasbon' as ActiveTab,
+          label: 'Catatan Kasbon',
+          icon: BookOpen,
+          color: 'text-amber-400',
+          badge: unpaidKasbonCount > 0 ? unpaidKasbonCount : undefined,
+        },
+        { id: 'reports' as ActiveTab, label: 'Laporan Laba Rugi', icon: BarChart3, color: 'text-rose-400' },
+      ]
+    : [
+        // Mode Kasir (Staf): Show items filtered by staffPermissions
+        ...(hasPermission('canAccessShift')
+          ? [
+              {
+                id: 'shift' as ActiveTab,
+                label: 'Shift & 4 Server',
+                icon: Clock,
+                color: 'text-amber-400',
+                badge: activeShift ? 'Aktif' : 'Buka',
+                badgeColor: activeShift ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-slate-700 text-slate-300',
+              },
+            ]
+          : []),
+        ...(hasPermission('canAccessTransfer')
+          ? [{ id: 'transfer' as ActiveTab, label: 'Transfer Uang', icon: Send, color: 'text-indigo-400' }]
+          : []),
+        ...(hasPermission('canAccessTarikTunai')
+          ? [{ id: 'tarik_tunai' as ActiveTab, label: 'Tarik Tunai', icon: Banknote, color: 'text-emerald-400' }]
+          : []),
+        ...(hasPermission('canAccessPosAksesoris')
+          ? [{ id: 'aksesoris' as ActiveTab, label: 'Kasir Aksesoris', icon: ShoppingBag, color: 'text-purple-400' }]
+          : []),
+        ...(hasPermission('canAccessInventory')
+          ? [{ id: 'inventory' as ActiveTab, label: 'Gudang Stok', icon: Building2, color: 'text-purple-400' }]
+          : []),
+        ...(hasPermission('canAccessKasbon')
+          ? [
+              {
+                id: 'kasbon' as ActiveTab,
+                label: 'Catatan Kasbon',
+                icon: BookOpen,
+                color: 'text-amber-400',
+                badge: unpaidKasbonCount > 0 ? unpaidKasbonCount : undefined,
+              },
+            ]
+          : []),
+        ...(hasPermission('canAccessFinance')
+          ? [{ id: 'finance' as ActiveTab, label: 'Buku Kas', icon: Wallet, color: 'text-teal-400' }]
+          : []),
+        ...(hasPermission('canAccessReports')
+          ? [{ id: 'reports' as ActiveTab, label: 'Laporan Laba', icon: BarChart3, color: 'text-rose-400' }]
+          : []),
+      ];
 
   return (
     <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-xl">
@@ -134,42 +202,50 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenS
 
           {/* Time & Settings Controls */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Owner vs Staff Mode Badge & PIN Unlock Button */}
+            {/* Active Cashier Badge in Staff Mode */}
+            {!isOwner && activeShift && (
+              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] text-slate-300">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-slate-400">Kasir:</span>
+                <span className="font-semibold text-white truncate max-w-[120px]">{activeShift.cashierName.split(' ')[0]}</span>
+              </div>
+            )}
+
+            {/* Owner vs Staff Mode Switcher Button */}
             <button
               type="button"
               onClick={() => {
-                if (isOwnerUnlocked) {
-                  lockOwner();
+                if (isOwner) {
+                  switchViewMode('staff');
+                  setActiveTab('shift');
                 } else {
-                  requestOwnerPin(
-                    'Buka Akses Mode Pemilik (Owner)',
-                    () => {},
-                    'Masukkan 4-digit PIN Pemilik untuk membuka akses laporan laba & pengaturan'
-                  );
+                  switchViewMode('owner');
+                  setActiveTab('owner_dashboard');
                 }
               }}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition border ${
-                isOwnerUnlocked
-                  ? 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border-emerald-600/70 shadow-lg shadow-emerald-950/50'
-                  : 'bg-amber-950/70 hover:bg-amber-900 text-amber-300 border-amber-700/60'
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition border shadow-md ${
+                isOwner
+                  ? 'bg-gradient-to-r from-amber-950/80 to-yellow-950/80 hover:from-amber-900 hover:to-yellow-900 text-amber-300 border-amber-600/70 shadow-amber-950/30'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
               }`}
               title={
-                isOwnerUnlocked
+                isOwner
                   ? 'Mode Pemilik Aktif. Klik untuk mengunci kembali ke Mode Kasir.'
                   : 'Mode Kasir Aktif. Klik untuk membuka Mode Pemilik dengan PIN.'
               }
             >
-              {isOwnerUnlocked ? (
+              {isOwner ? (
                 <>
-                  <Unlock className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="hidden sm:inline">Mode Owner</span>
+                  <Unlock className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">👑 Mode Owner</span>
                   <span className="sm:hidden text-[10px]">Owner</span>
+                  <span className="text-[10px] text-amber-400/80 font-normal hidden lg:inline">| Kunci</span>
                 </>
               ) : (
                 <>
                   <Lock className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="hidden sm:inline">Mode Kasir</span>
-                  <span className="sm:hidden text-[10px]">Kasir</span>
+                  <span className="hidden sm:inline">Masuk Mode Owner 👑</span>
+                  <span className="sm:hidden text-[10px]">Owner PIN</span>
                 </>
               )}
             </button>

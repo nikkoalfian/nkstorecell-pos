@@ -304,7 +304,7 @@ Pembayaran bisa dilakukan secara tunai di konter atau transfer ya kak. Terima ka
                 <label className="text-slate-300 font-medium block mb-1">Nama Pelanggan:</label>
                 <input
                   type="text"
-                  placeholder="Contoh: Pak RT Udin / Bu Joko"
+                  placeholder="Nama pelanggan / penghutang"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
@@ -316,7 +316,7 @@ Pembayaran bisa dilakukan secara tunai di konter atau transfer ya kak. Terima ka
                 <label className="text-slate-300 font-medium block mb-1">No. WhatsApp Pelanggan (Untuk Tagih):</label>
                 <input
                   type="tel"
-                  placeholder="Contoh: 081234567890"
+                  placeholder="Nomor WhatsApp (08...)"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 font-mono text-white focus:outline-none focus:border-blue-500"
@@ -327,7 +327,7 @@ Pembayaran bisa dilakukan secara tunai di konter atau transfer ya kak. Terima ka
                 <label className="text-slate-300 font-medium block mb-1">Jumlah Kasbon (Rp):</label>
                 <input
                   type="number"
-                  placeholder="Contoh: 25000"
+                  placeholder="0"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-base font-bold font-mono text-amber-400 focus:outline-none focus:border-blue-500"
@@ -339,7 +339,7 @@ Pembayaran bisa dilakukan secara tunai di konter atau transfer ya kak. Terima ka
                 <label className="text-slate-300 font-medium block mb-1">Keterangan / Janji Bayar:</label>
                 <input
                   type="text"
-                  placeholder="Contoh: Pulsa Telkomsel 20rb - Janji bayar nanti sore"
+                  placeholder="Keterangan transaksi / janji bayar..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"

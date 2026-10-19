@@ -3,11 +3,27 @@ import {
   AccessoryItem,
   AccountBalance,
   StoreSettings,
+  StaffPermissions,
   Transaction,
   KasbonRecord,
   Operator,
   ShiftRecord,
 } from '../types';
+
+export const DEFAULT_STAFF_PERMISSIONS: StaffPermissions = {
+  canAccessShift: true,
+  canAccessTransfer: true,
+  canAccessTarikTunai: true,
+  canAccessPosAksesoris: true,
+  canAccessKasbon: true,
+  canAccessInventory: false,
+  canAccessFinance: false,
+  canAccessReports: false,
+  canDeleteTransactions: false,
+  canDeleteShifts: false,
+  canEditSettings: false,
+  canViewCostPrice: false,
+};
 
 export const INITIAL_SETTINGS: StoreSettings = {
   storeName: 'MITRACELL & AGEN KEUANGAN',
@@ -27,6 +43,7 @@ export const INITIAL_SETTINGS: StoreSettings = {
   ],
   ownerPin: '1234',
   enablePinProtection: true,
+  staffPermissions: DEFAULT_STAFF_PERMISSIONS,
 };
 
 export const INITIAL_ACCOUNTS: AccountBalance[] = [
@@ -521,7 +538,7 @@ export const INITIAL_SHIFTS: ShiftRecord[] = [
     totalPulseProfit: 130894,
     totalExpenses: 25000,
     netProfit: 144894,
-    notes: 'Simulasi aktual shift selesai: Server 1 Digipos laba bersih Rp 35.894 cocok 100%',
+    notes: 'Shift selesai: Rekap 4 server dan kas kasir seimbang',
   },
   {
     id: 'shift-2',

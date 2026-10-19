@@ -228,10 +228,10 @@ export const PosPulsa: React.FC = () => {
               type="tel"
               placeholder={
                 activeCategory === 'token_pln'
-                  ? 'Contoh: 14283920194 (11-12 digit)'
+                  ? 'Masukkan Nomor Meter / ID PLN (11-12 digit)'
                   : activeCategory === 'ewallet'
-                  ? 'Contoh: 081298765432'
-                  : 'Ketik Nomor HP (contoh: 0812... / 0857...)'
+                  ? 'Masukkan Nomor HP Akun E-Wallet (08...)'
+                  : 'Masukkan Nomor HP Tujuan (08...)'
               }
               value={phoneNumber}
               onChange={(e) => handlePhoneChange(e.target.value)}
@@ -519,7 +519,7 @@ export const PosPulsa: React.FC = () => {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">Rp</span>
                     <input
                       type="number"
-                      placeholder="Contoh: 50000"
+                      placeholder="0"
                       value={cashGiven}
                       onChange={(e) => setCashGiven(e.target.value === '' ? '' : Number(e.target.value))}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-sm font-bold text-white focus:outline-none focus:border-blue-500"

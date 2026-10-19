@@ -10,6 +10,7 @@ import {
   ShiftRecord,
   ServerShiftItem,
   ShiftExpense,
+  StaffPermissions,
 } from '../types';
 import {
   INITIAL_SETTINGS,
@@ -19,6 +20,7 @@ import {
   INITIAL_TRANSACTIONS,
   INITIAL_KASBON,
   INITIAL_SHIFTS,
+  DEFAULT_STAFF_PERMISSIONS,
 } from '../data/initialData';
 import confetti from 'canvas-confetti';
 
@@ -85,12 +87,18 @@ interface AppContextType {
   activeShiftReceipt: ShiftRecord | null;
   setActiveShiftReceipt: (shift: ShiftRecord | null) => void;
 
-  // PIN & Role Security
+  // PIN & Role Security & Mode Switcher
   isOwnerUnlocked: boolean;
   unlockOwner: (pin: string) => boolean;
   lockOwner: () => void;
   updateOwnerPin: (newPin: string) => void;
   verifyOwnerPin: (pin: string) => boolean;
+  viewMode: 'staff' | 'owner';
+  setViewMode: (mode: 'staff' | 'owner') => void;
+  switchViewMode: (targetMode: 'staff' | 'owner') => void;
+  hasPermission: (permissionKey: keyof StaffPermissions) => boolean;
+  updateStaffPermissions: (perms: Partial<StaffPermissions>) => void;
+  resetStaffPermissions: () => void;
   pinModal: {
     isOpen: boolean;
     title: string;
@@ -130,6 +138,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...parsed,
           ownerPin: parsed.ownerPin || '1234',
           enablePinProtection: parsed.enablePinProtection !== undefined ? parsed.enablePinProtection : true,
+          staffPermissions: {
+            ...DEFAULT_STAFF_PERMISSIONS,
+            ...(parsed.staffPermissions || {}),
+          },
         };
       } catch {
         return INITIAL_SETTINGS;
@@ -181,7 +193,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeReceipt, setActiveReceipt] = useState<Transaction | null>(null);
   const [activeShiftReceipt, setActiveShiftReceipt] = useState<ShiftRecord | null>(null);
 
-  // 8. Owner PIN Security State
+  // 8. Role & Security State (Owner vs Staff View Mode)
+  const [viewMode, setViewMode] = useState<'staff' | 'owner'>('staff');
   const [isOwnerUnlocked, setIsOwnerUnlocked] = useState(false);
   const [pinModal, setPinModal] = useState<{
     isOpen: boolean;
@@ -209,6 +222,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const lockOwner = () => {
     setIsOwnerUnlocked(false);
+    setViewMode('staff');
+  };
+
+  const switchViewMode = (targetMode: 'staff' | 'owner') => {
+    if (targetMode === 'owner') {
+      if (isOwnerUnlocked) {
+        setViewMode('owner');
+      } else {
+        requestOwnerPin(
+          'Masuk ke Halaman Mode Pemilik (Owner)',
+          () => {
+            setIsOwnerUnlocked(true);
+            setViewMode('owner');
+          },
+          'Masukkan 4-digit PIN Pemilik untuk membuka seluruh dashboard dan pengaturan hak akses kasir'
+        );
+      }
+    } else {
+      setViewMode('staff');
+      setIsOwnerUnlocked(false);
+    }
+  };
+
+  const hasPermission = (permissionKey: keyof StaffPermissions): boolean => {
+    // If owner mode is active and unlocked, grant full access
+    if (viewMode === 'owner' && isOwnerUnlocked) return true;
+    // If PIN protection is completely turned off by owner, grant access
+    if (!settings.enablePinProtection) return true;
+    // Otherwise check staff permissions
+    const perms = settings.staffPermissions || DEFAULT_STAFF_PERMISSIONS;
+    return perms[permissionKey] ?? false;
+  };
+
+  const updateStaffPermissions = (perms: Partial<StaffPermissions>) => {
+    setSettings((prev) => ({
+      ...prev,
+      staffPermissions: {
+        ...(prev.staffPermissions || DEFAULT_STAFF_PERMISSIONS),
+        ...perms,
+      },
+    }));
+  };
+
+  const resetStaffPermissions = () => {
+    setSettings((prev) => ({
+      ...prev,
+      staffPermissions: DEFAULT_STAFF_PERMISSIONS,
+    }));
   };
 
   const updateOwnerPin = (newPin: string) => {
@@ -515,7 +576,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const updatedServers = activeShift.servers.map((srv, index) => {
       const finalBal = params.serverFinalBalances[index] ?? srv.finalBalance;
-      // Total Saldo Modal: bisa di-override langsung dari modal jika user mengedit / mensimulasikan
+      // Total Saldo Modal per server (Saldo Awal + Top Up)
       const totalSaldo = (params.serverTotalBalances && params.serverTotalBalances[index] !== undefined && params.serverTotalBalances[index] !== null)
         ? params.serverTotalBalances[index]
         : (srv.initialBalance + srv.topUpAmount);
@@ -888,6 +949,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         lockOwner,
         updateOwnerPin,
         verifyOwnerPin,
+        viewMode,
+        setViewMode,
+        switchViewMode,
+        hasPermission,
+        updateStaffPermissions,
+        resetStaffPermissions,
         pinModal,
         requestOwnerPin,
         closePinModal,

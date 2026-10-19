@@ -20,6 +20,8 @@ export function formatDateIndo(dateString: string): string {
   }
 }
 
+export const formatTanggal = formatDateIndo;
+
 export function generateInvoiceNo(typePrefix: string = 'TRX'): string {
   const now = new Date();
   const year = now.getFullYear().toString().slice(-2);
