@@ -1,0 +1,6 @@
+{
+  "name": "MitraCell POS - Konter Pulsa & Agen Kasir",
+  "description": "Aplikasi lengkap untuk konter pulsa, toko aksesoris HP, serta agen transfer & tarik tunai dengan cetak struk dan pembukuan laba rugi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

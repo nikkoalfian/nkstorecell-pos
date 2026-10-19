@@ -1,0 +1,365 @@
+import React, { useState } from 'react';
+import { useApp } from '../../context/AppContext';
+import { StoreSettings } from '../../types';
+import {
+  Settings,
+  X,
+  Check,
+  Download,
+  Upload,
+  RotateCcw,
+  Store,
+  Phone,
+  MapPin,
+  Printer,
+  ShieldAlert,
+} from 'lucide-react';
+
+interface SettingsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+  const { settings, updateSettings, exportDataJson, importDataJson, resetAllData } = useApp();
+
+  const [form, setForm] = useState<StoreSettings>({ ...settings });
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+
+  if (!isOpen) return null;
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSettings(form);
+    onClose();
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (content) {
+        const success = importDataJson(content);
+        if (success) {
+          setImportStatus('Data backup berhasil dipulihkan!');
+          setTimeout(() => setImportStatus(null), 3000);
+        } else {
+          setImportStatus('Gagal memulihkan data: Format file tidak valid.');
+        }
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleReset = () => {
+    if (confirm('PERINGATAN: Apakah Anda yakin ingin mereset semua data aplikasi kembali ke contoh awal? Semua transaksi baru akan terhapus.')) {
+      resetAllData();
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden my-8">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-800/80">
+          <div className="flex items-center gap-2">
+            <Settings className="w-5 h-5 text-blue-400" />
+            <h3 className="font-bold text-white text-base">Pengaturan Konter & Struk</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content Form */}
+        <form onSubmit={handleSave} className="p-5 space-y-5 text-xs max-h-[75vh] overflow-y-auto">
+          {/* Identitas Toko */}
+          <div className="space-y-3">
+            <h4 className="text-slate-300 font-bold uppercase tracking-wider flex items-center gap-2">
+              <Store className="w-4 h-4 text-blue-400" /> Profil Toko & Konter
+            </h4>
+
+            <div>
+              <label className="text-slate-400 block mb-1">Nama Konter / Toko (Dicetak di Struk):</label>
+              <input
+                type="text"
+                value={form.storeName}
+                onChange={(e) => setForm({ ...form, storeName: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-bold focus:outline-none focus:border-blue-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-slate-400 block mb-1">Slogan / Tagline:</label>
+              <input
+                type="text"
+                value={form.tagline}
+                onChange={(e) => setForm({ ...form, tagline: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-slate-400 block mb-1">Nama Pemilik / Kasir:</label>
+                <input
+                  type="text"
+                  value={form.ownerName}
+                  onChange={(e) => setForm({ ...form, ownerName: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1">Nomor WhatsApp Toko:</label>
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 font-mono text-white focus:outline-none focus:border-blue-500"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-slate-400 block mb-1">Alamat Toko (Dicetak di Struk):</label>
+              <input
+                type="text"
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Pengaturan 4 Server Pulsa & Kuota */}
+          <div className="space-y-3 pt-3 border-t border-slate-800">
+            <h4 className="text-slate-300 font-bold uppercase tracking-wider flex items-center gap-2">
+              <Store className="w-4 h-4 text-emerald-400" /> Nama 4 Server Pulsa & Kuota Terpisah
+            </h4>
+            <p className="text-[11px] text-slate-500">
+              Ubah label nama 4 server sesuai aplikasi/chip yang Anda gunakan (contoh: Digipos, SiDompul, Mobo, dsb).
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[0, 1, 2, 3].map((idx) => (
+                <div key={idx}>
+                  <label className="text-slate-400 block mb-1">Server {idx + 1}:</label>
+                  <input
+                    type="text"
+                    value={form.serverNames?.[idx] || ''}
+                    onChange={(e) => {
+                      const newNames = [...(form.serverNames || ['', '', '', ''])] as [string, string, string, string];
+                      newNames[idx] = e.target.value;
+                      setForm({ ...form, serverNames: newNames });
+                    }}
+                    placeholder={`Nama Server ${idx + 1}`}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Pengaturan Biaya Admin Default */}
+          <div className="space-y-3 pt-3 border-t border-slate-800">
+            <h4 className="text-slate-300 font-bold uppercase tracking-wider">
+              Biaya Admin Default Konter
+            </h4>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-slate-400 block mb-1">Default Admin Transfer Uang (Rp):</label>
+                <input
+                  type="number"
+                  value={form.defaultTransferAdminFee}
+                  onChange={(e) => setForm({ ...form, defaultTransferAdminFee: Number(e.target.value) || 0 })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 font-bold font-mono text-emerald-400 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1">Default Admin Tarik Tunai (Rp):</label>
+                <input
+                  type="number"
+                  value={form.defaultTarikTunaiAdminFee}
+                  onChange={(e) => setForm({ ...form, defaultTarikTunaiAdminFee: Number(e.target.value) || 0 })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 font-bold font-mono text-emerald-400 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Pengaturan Struk */}
+          <div className="space-y-3 pt-3 border-t border-slate-800">
+            <h4 className="text-slate-300 font-bold uppercase tracking-wider flex items-center gap-2">
+              <Printer className="w-4 h-4 text-blue-400" /> Tampilan Struk Kasir
+            </h4>
+
+            <div>
+              <label className="text-slate-400 block mb-1">Pesan Penutup Struk (Footer):</label>
+              <textarea
+                rows={2}
+                value={form.receiptFooterMessage}
+                onChange={(e) => setForm({ ...form, receiptFooterMessage: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="text-slate-400 block mb-1">Lebar Kertas Printer Thermal:</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, printerPaperWidth: '58mm' })}
+                  className={`py-2 px-3 rounded-xl border text-center font-semibold transition ${
+                    form.printerPaperWidth === '58mm'
+                      ? 'bg-blue-600 text-white border-blue-500'
+                      : 'bg-slate-950 text-slate-300 border-slate-800'
+                  }`}
+                >
+                  58mm (Standar Mini Konter)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, printerPaperWidth: '80mm' })}
+                  className={`py-2 px-3 rounded-xl border text-center font-semibold transition ${
+                    form.printerPaperWidth === '80mm'
+                      ? 'bg-blue-600 text-white border-blue-500'
+                      : 'bg-slate-950 text-slate-300 border-slate-800'
+                  }`}
+                >
+                  80mm (Printer Thermal Lebar)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Keamanan Akun & PIN Pemilik */}
+          <div className="space-y-3 pt-3 border-t border-slate-800">
+            <h4 className="text-slate-300 font-bold uppercase tracking-wider flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-amber-400" /> Keamanan Akun & PIN Pemilik (Owner)
+            </h4>
+            <p className="text-[11px] text-slate-400">
+              Proteksi menu sensitif (Laporan Laba Toko, Hapus Shift, Edit Rekening Bank) agar staf kasir hanya bisa melakukan transaksi harian.
+            </p>
+
+            <div className="p-3.5 bg-slate-950 rounded-2xl border border-amber-900/40 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-white block">Aktifkan Proteksi PIN Pemilik</span>
+                  <span className="text-[10px] text-slate-400">Kunci fitur sensitif di Mode Kasir</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.enablePinProtection !== false}
+                    onChange={(e) => setForm({ ...form, enablePinProtection: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1">PIN Rahasia Pemilik (4 Digit):</label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    maxLength={6}
+                    value={form.ownerPin || ''}
+                    onChange={(e) => setForm({ ...form, ownerPin: e.target.value.replace(/\D/g, '') })}
+                    placeholder="Contoh: 1234"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono font-bold tracking-widest text-base focus:outline-none focus:border-amber-500"
+                    required
+                  />
+                </div>
+                <span className="text-[10px] text-slate-500 mt-1 block">
+                  PIN saat ini: <strong className="text-amber-400 font-mono">{form.ownerPin || '1234'}</strong> (Hanya pemilik yang tahu PIN ini)
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Backup & Restore Data */}
+          <div className="space-y-3 pt-3 border-t border-slate-800">
+            <h4 className="text-slate-300 font-bold uppercase tracking-wider">
+              Cadangan Data & Pemulihan (Backup & Restore)
+            </h4>
+
+            {importStatus && (
+              <div className="p-3 bg-blue-950 border border-blue-800 rounded-xl text-blue-200">
+                {importStatus}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={exportDataJson}
+                className="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex flex-col items-center justify-center gap-1.5 transition"
+              >
+                <Download className="w-5 h-5 text-blue-400" />
+                <span className="font-semibold">Unduh Backup JSON</span>
+                <span className="text-[10px] text-slate-400">Simpan ke HP/Laptop</span>
+              </button>
+
+              <label className="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex flex-col items-center justify-center gap-1.5 transition cursor-pointer">
+                <Upload className="w-5 h-5 text-emerald-400" />
+                <span className="font-semibold">Pulihkan Dari File</span>
+                <span className="text-[10px] text-slate-400">Upload JSON backup</span>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Reset System Danger Zone */}
+          <div className="pt-3 border-t border-slate-800 flex justify-between items-center">
+            <div>
+              <span className="text-red-400 font-semibold block">Reset Semua Data</span>
+              <span className="text-[10px] text-slate-500">Kembalikan ke data demo bawaan</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="px-3 py-1.5 rounded-lg bg-red-950 hover:bg-red-900 text-red-300 border border-red-800 text-xs font-semibold flex items-center gap-1.5 transition"
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> Reset Demo
+            </button>
+          </div>
+
+          {/* Save Action Button */}
+          <div className="pt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold"
+            >
+              Tutup
+            </button>
+            <button
+              type="submit"
+              className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold flex items-center justify-center gap-1.5 shadow-lg shadow-blue-900/30"
+            >
+              <Check className="w-4 h-4" /> Simpan Perubahan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
