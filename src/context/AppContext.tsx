@@ -116,14 +116,25 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// Clean up legacy v1/v2 storage keys to ensure a clean data reset
+try {
+  ['v1', 'v2'].forEach((ver) => {
+    ['settings', 'accounts', 'accessories', 'pulsa', 'transactions', 'kasbon', 'shifts'].forEach((k) => {
+      localStorage.removeItem(`mitracell_${k}_${ver}`);
+    });
+  });
+} catch {
+  // ignore storage errors
+}
+
 const STORAGE_KEYS = {
-  SETTINGS: 'mitracell_settings_v2',
-  ACCOUNTS: 'mitracell_accounts_v2',
-  ACCESSORIES: 'mitracell_accessories_v2',
-  PULSA: 'mitracell_pulsa_v2',
-  TRANSACTIONS: 'mitracell_transactions_v2',
-  KASBON: 'mitracell_kasbon_v2',
-  SHIFTS: 'mitracell_shifts_v2',
+  SETTINGS: 'mitracell_settings_v3',
+  ACCOUNTS: 'mitracell_accounts_v3',
+  ACCESSORIES: 'mitracell_accessories_v3',
+  PULSA: 'mitracell_pulsa_v3',
+  TRANSACTIONS: 'mitracell_transactions_v3',
+  KASBON: 'mitracell_kasbon_v3',
+  SHIFTS: 'mitracell_shifts_v3',
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

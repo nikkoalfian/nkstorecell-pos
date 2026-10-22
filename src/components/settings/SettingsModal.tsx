@@ -8,7 +8,6 @@ import {
   Check,
   Download,
   Upload,
-  RotateCcw,
   Store,
   Phone,
   MapPin,
@@ -24,7 +23,7 @@ interface SettingsModalProps {
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
-  const { settings, updateSettings, exportDataJson, importDataJson, resetAllData } = useApp();
+  const { settings, updateSettings, exportDataJson, importDataJson } = useApp();
 
   const [form, setForm] = useState<StoreSettings>({ ...settings });
   const [importStatus, setImportStatus] = useState<string | null>(null);
@@ -55,13 +54,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
       }
     };
     reader.readAsText(file);
-  };
-
-  const handleReset = () => {
-    if (confirm('PERINGATAN: Apakah Anda yakin ingin mereset seluruh data aplikasi ke pengaturan awal toko? Seluruh riwayat transaksi akan dikosongkan.')) {
-      resetAllData();
-      onClose();
-    }
   };
 
   return (
@@ -383,20 +375,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </div>
           </div>
 
-          {/* Reset System Danger Zone */}
-          <div className="pt-3 border-t border-slate-800 flex justify-between items-center">
-            <div>
-              <span className="text-red-400 font-semibold block">Reset Semua Data</span>
-              <span className="text-[10px] text-slate-500">Kembalikan ke data demo bawaan</span>
-            </div>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="px-3 py-1.5 rounded-lg bg-red-950 hover:bg-red-900 text-red-300 border border-red-800 text-xs font-semibold flex items-center gap-1.5 transition"
-            >
-              <RotateCcw className="w-3.5 h-3.5" /> Reset Demo
-            </button>
-          </div>
 
           {/* Save Action Button */}
           <div className="pt-2 flex gap-2">
